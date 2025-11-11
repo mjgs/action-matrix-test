@@ -53,7 +53,7 @@ jobs:
     strategy:
       matrix:
         # Use fromJSON() to parse the output string into an array of configurations.
-        include: ${{ fromJSON(needs.generate_matrix.outputs.matrix_json) }}
+        post: ${{ fromJSON(needs.generate_matrix.outputs.matrix_json) }}
         
     steps:
       - name: Checkout Code
@@ -62,7 +62,7 @@ jobs:
       - name: Execute Test/Deploy Step
         run: |
           echo "--- Configuration Summary ---"
-          echo "Project: ${{ matrix.project }}"
-          echo "Environment: ${{ matrix.env }}"
-          echo "Test Type: ${{ matrix.test-type }}"
+          echo "Project: ${{ matrix.post.project }}"
+          echo "Environment: ${{ matrix.post.env }}"
+          echo "Test Type: ${{ matrix.post.test-type }}"
           echo "---------------------------"
