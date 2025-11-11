@@ -18,22 +18,28 @@ jobs:
       - name: Create and Export JSON Matrix
         id: set_matrix
         run: |
-          # Step 1: Define the JSON data in a shell variable.
-          # We use single quotes (') to prevent the shell from expanding any variables inside the JSON.
-          JSON_CONTENT='
+          # Step 1: Define the multi-line JSON and write it to a temporary file.
+          # In a real-world scenario, this is where you would read the content 
+          # from a tool or a dynamically generated source.
+          cat > /tmp/matrix.txt <<- EOF_JSON
             [
               {"project": "client-portal", "env": "stage", "test-type": "smoke"},
               {"project": "data-api", "env": "prod", "test-type": "integration"},
               {"project": "data-api", "env": "stage", "test-type": "unit"},
               {"project": "client-portal", "env": "prod", "test-type": "e2e"}
             ]
-          '
-          
-          echo DEBUG: JSON_CONTENT: "[$JSON_CONTENT]"
+          EOF_JSON
 
-          # Step 2: Write the multiline output to GITHUB_OUTPUT.
-          # We use the recommended multiline format with the EOF delimiter.
-          # The -e flag on echo is sometimes necessary to handle multi-line strings correctly.
+          # Step 2: Use jq to read the temporary file and output compact, single-line JSON.
+          # The result is stored in the shell variable JSON_CONTENT.
+          JSON_CONTENT=$(jq -c . /tmp/matrix.txt)
+
+          # Optional: Print the compact JSON for debugging purposes.
+          # Wrap in < > to visualize leading/trailing whitespace.
+          echo "DEBUG: JSON_CONTENT (compact): <$JSON_CONTENT>"
+
+          # Step 3: Write the compact JSON content to GITHUB_OUTPUT using the multiline format.
+          # Since the JSON is now single-line, this output is very stable.
           echo "matrix_data<<EOF" >> $GITHUB_OUTPUT
           echo "$JSON_CONTENT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
