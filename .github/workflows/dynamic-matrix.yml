@@ -11,46 +11,42 @@ jobs:
   generate_matrix:
     runs-on: ubuntu-latest
     
-    # Define the output variable that the next job will consume
     outputs:
       matrix_json: ${{ steps.set_matrix.outputs.matrix_data }}
       
     steps:
-      - name: Create JSON Array
+      - name: Create and Export JSON Matrix
         id: set_matrix
         run: |
-          # ---
-          # 💡 This is where you put your custom logic (e.g., calling an API, 
-          # reading a file, or determining configurations based on changed files).
-          # In this example, we define it statically for demonstration.
-          # ---
+          # Step 1: Define the JSON data in a shell variable.
+          # We use single quotes (') to prevent the shell from expanding any variables inside the JSON.
+          JSON_CONTENT='
+            [
+              {"project": "client-portal", "env": "stage", "test-type": "smoke"},
+              {"project": "data-api", "env": "prod", "test-type": "integration"},
+              {"project": "data-api", "env": "stage", "test-type": "unit"},
+              {"project": "client-portal", "env": "prod", "test-type": "e2e"}
+            ]
+          '
           
-          # 
-          # The data MUST be a valid JSON array of objects.
-          #
-          JSON_DATA='[
-            {"project": "client-portal", "env": "stage", "test-type": "smoke"},
-            {"project": "data-api", "env": "prod", "test-type": "integration"},
-            {"project": "data-api", "env": "stage", "test-type": "unit"},
-            {"project": "client-portal", "env": "prod", "test-type": "e2e"}
-          ]'
-          
-          # Set the JSON string as a job output variable
-          echo "matrix_data=$JSON_DATA" >> $GITHUB_OUTPUT
+          # Step 2: Write the multiline output to GITHUB_OUTPUT.
+          # We use the recommended multiline format with the EOF delimiter.
+          # The -e flag on echo is sometimes necessary to handle multi-line strings correctly.
+          echo "matrix_data<<EOF" >> $GITHUB_OUTPUT
+          echo "$JSON_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   # 2. Job to consume the generated JSON and run the parallel jobs
   dynamic_job:
     runs-on: ubuntu-latest
     
-    # Declare the dependency and access the output from the previous job
     needs: generate_matrix 
     
     strategy:
       matrix:
-        # Use fromJSON() on the output string to parse it into an array of configurations.
-        # The 'include' key is mandatory for injecting an array of objects.
+        # Use fromJSON() to parse the output string into an array of configurations.
         include: ${{ fromJSON(needs.generate_matrix.outputs.matrix_json) }}
-
+        
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -62,4 +58,3 @@ jobs:
           echo "Environment: ${{ matrix.env }}"
           echo "Test Type: ${{ matrix.test-type }}"
           echo "---------------------------"
-          # Add your actual build, test, or deployment commands here
