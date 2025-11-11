@@ -29,6 +29,8 @@ jobs:
             ]
           '
           
+          echo DEBUG: JSON_CONTENT: "[$JSON_CONTENT]"
+
           # Step 2: Write the multiline output to GITHUB_OUTPUT.
           # We use the recommended multiline format with the EOF delimiter.
           # The -e flag on echo is sometimes necessary to handle multi-line strings correctly.
