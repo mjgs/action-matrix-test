@@ -1,0 +1,32 @@
+name: Reusable Project Deployment
+
+# Must be callable by another workflow
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        description: 'The name of the project to deploy/test.'
+        required: true
+        type: string
+      environment:
+        description: 'The target environment (stage/prod/etc).'
+        required: true
+        type: string
+      test_type:
+        description: 'The type of test to run.'
+        required: true
+        type: string
+
+jobs:
+  run_deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⚙️ Deploy/Test Logic
+        run: |
+          echo "--- Reusable Workflow Execution ---"
+          echo "Received Inputs:"
+          echo "Project: ${{ inputs.project_name }}"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Test Type: ${{ inputs.test_type }}"
+          echo "Status: Deployment/Test started successfully."
+          echo "-----------------------------------"

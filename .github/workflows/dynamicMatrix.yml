@@ -19,8 +19,6 @@ jobs:
         id: set_matrix
         run: |
           # Step 1: Define the multi-line JSON and write it to a temporary file.
-          # In a real-world scenario, this is where you would read the content 
-          # from a tool or a dynamically generated source.
           cat > /tmp/matrix.txt <<- EOF_JSON
             [
               {"project": "client-portal", "env": "stage", "test-type": "smoke"},
@@ -31,38 +29,35 @@ jobs:
           EOF_JSON
 
           # Step 2: Use jq to read the temporary file and output compact, single-line JSON.
-          # The result is stored in the shell variable JSON_CONTENT.
           JSON_CONTENT=$(jq -c . /tmp/matrix.txt)
 
           # Optional: Print the compact JSON for debugging purposes.
-          # Wrap in < > to visualize leading/trailing whitespace.
           echo "DEBUG: JSON_CONTENT (compact): <$JSON_CONTENT>"
 
           # Step 3: Write the compact JSON content to GITHUB_OUTPUT using the multiline format.
-          # Since the JSON is now single-line, this output is very stable.
           echo "matrix_data<<EOF" >> $GITHUB_OUTPUT
           echo "$JSON_CONTENT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
   # 2. Job to consume the generated JSON and run the parallel jobs
+  # The run time name now includes the dynamic matrix variables
   dynamic_job:
-    runs-on: ubuntu-latest
+    name: Deploy/Test ${{ matrix.post.project }} - ${{ matrix.post.env }}
     
     needs: generate_matrix 
     
+    # ⚠️ We do NOT use runs-on here because we are using 'uses:'
+    # runs-on: ubuntu-latest 
+
     strategy:
       matrix:
         # Use fromJSON() to parse the output string into an array of configurations.
         post: ${{ fromJSON(needs.generate_matrix.outputs.matrix_json) }}
         
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Execute Test/Deploy Step
-        run: |
-          echo "--- Configuration Summary ---"
-          echo "Project: ${{ matrix.post.project }}"
-          echo "Environment: ${{ matrix.post.env }}"
-          echo "Test Type: ${{ matrix.post.test-type }}"
-          echo "---------------------------"
+    # Call the reusable workflow instead of running steps
+    uses: ./.github/workflows/deployProject.yml
+    with:
+      # Map the dynamic matrix variables to the workflow inputs
+      project_name: ${{ matrix.post.project }}
+      environment: ${{ matrix.post.env }}
+      test_type: "${{ matrix.post['test-type'] }}"
